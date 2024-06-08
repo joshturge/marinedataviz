@@ -16,7 +16,7 @@ class Sensor:
     model: str
     unit: str
     unit_pretty: str
-    meta: dict[str, str]
+    depth: float 
     observations: list[Observation]
 
 @dataclass
@@ -24,16 +24,57 @@ class Device:
     id: int
     name: str
     description: str
-    active: bool
     latitude: float
     longtitude: float
     sensors: list[Sensor]
 
 def unmarshal_device(xmlroot: et.Element) -> Device:
-    observations = [Observation(1, 1, 1)]
-    sensors = [Sensor(1, "sensor", "description", "model", "unit", "Unit", {}, observations)]
-    dev = Device(1, "device", "description", True, 0, 0, sensors)
-    return dev
+    feat = xmlroot.find(".//feature")
+    if feat == None:
+        raise Exception("feature not found")
+    id = feat.get("id")
+    if id == None:
+        raise Exception("id not found")
+    name = feat.get("name")
+    if name == None:
+        raise Exception("name not found")
+    desc = feat.get("description")
+    if desc == None:
+        raise Exception("description not found")
+    lat = feat.get("lat")
+    if lat == None:
+        raise Exception("lat not found")
+    lng = feat.get("lng")
+    if lng == None:
+        raise Exception("lng not found")
+    device = Device(int(id), name, desc, float(lat), float(lng), [])
+
+    for sensor in feat.findall("sensors/sensor"):
+        id = sensor.get("id")
+        if id == None:
+            raise Exception("sensor id not found")
+        name = sensor.get("name")
+        if name == None:
+            raise Exception("sensor name not found")
+        desc = sensor.get("description")
+        if desc == None:
+            raise Exception("sensor description not found")
+        model = sensor.get("model")
+        if model == None:
+            raise Exception("sensor model not found")
+        unit = sensor.get("phenomenon_uom")
+        if unit == None:
+            raise Exception("sensor phenomenon_uom not found")
+        unit_pretty = sensor.get("phenomenon_name")
+        if unit_pretty == None:
+            raise Exception("sensor phenomenon_name not found")
+        depth = sensor.get("depth")
+        if depth == None:
+            depth = "-1" 
+
+        device.sensors.append(Sensor(int(id), name, desc, model, unit, unit_pretty, float(depth), []))
+
+    return device
 
 app = Flask(__name__)
 
