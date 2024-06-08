@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+    <h1>{{device.name}} - {{ device.description }}
+        <ul>
+            {% for sensor in device.sensors %}
+            <li>
+                <p>{{ sensor.name }} - {{ sensor.description }}</p>
+                {% for observation in sensor.observations %}
+                <p>{{ observation.id }} - {{ observation.time}} - {{observation.value}}</p>
+                {% endfor %}
+            </li>
+            {% endfor %}
+        </ul>
+</body>
+
+</html>
