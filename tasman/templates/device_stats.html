@@ -2,17 +2,11 @@
 <html lang="en">
 
 <body>
-    <h1>{{device.name}} - {{ device.description }}
-        <ul>
-            {% for sensor in device.sensors %}
-            <li>
-                <p>{{ sensor.name }} - {{ sensor.description }}</p>
-                {% for observation in sensor.observations %}
-                <p>{{ observation.id }} - {{ observation.time}} - {{observation.value}}</p>
-                {% endfor %}
-            </li>
-            {% endfor %}
-        </ul>
+    <h1>{{device.name}} - {{ device.description }}</h1>
+    <h3>Location {{device.latitude}}, {{device.longtitude}}</h3>
+    {% for plot in plots %}
+    <img src='data:image/png;base64,{{ plot }}' />
+    {% endfor %}
 </body>
 
 </html>
