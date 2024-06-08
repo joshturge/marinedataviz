@@ -2,7 +2,7 @@ import pandas as pd
 from matplotlib.figure import Figure
 from tasman.unmarshal import unmarshal_device
 from tasman.model import Observation
-from tasman.db import get_db, insert_device
+from tasman.db import get_db, insert_device, query_db
 from io import BytesIO
 import base64
 from flask import Flask, render_template, request, g
@@ -35,14 +35,18 @@ def close_db(e):
         db.close()
 
 @app.route("/")
-def home():
+def index():
+    return render_template("index.html") 
+
+@app.route("/upload-form")
+def upload_form():
     return render_template("upload_form.html") 
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
-    if 'file' not in request.files:
+    if 'dataset' not in request.files:
         return "file not found", 400 
-    file = request.files['file']
+    file = request.files['dataset']
     device = unmarshal_device(file.stream.read())
     dbconn = get_db()
     insert_device(dbconn, device)
@@ -66,6 +70,18 @@ def upload_file():
         plots.append(data)
 
     return render_template("device_stats.html", device=device, plots=plots), 200
+
+@app.route("/geo-markers")
+def geo_markers():
+    markers = []
+    rows = query_db("SELECT id,latitude,longtitude FROM device")
+    if rows == None:
+        return "no markers found", 400
+    for marker in rows:
+        markers.append({"id":marker["id"],"latitude":marker["latitude"],"longtitude":marker["longtitude"]})
+    return {
+            "markers": markers
+            }, 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

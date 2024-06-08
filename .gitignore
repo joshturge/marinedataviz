@@ -166,3 +166,4 @@ cython_debug/
 
 # sqlite3 files
 *.db
+*.db-journal
