@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 import xml.etree.ElementTree as et 
+from datetime import datetime
 from flask import Flask, render_template, request
 
 @dataclass
 class Observation:
     id: int
-    time: int
+    time: datetime 
     value: float
 
 @dataclass
@@ -49,30 +50,45 @@ def unmarshal_device(xmlroot: et.Element) -> Device:
         raise Exception("lng not found")
     device = Device(int(id), name, desc, float(lat), float(lng), [])
 
-    for sensor in feat.findall("sensors/sensor"):
-        id = sensor.get("id")
+    for sen in feat.findall("sensors/sensor"):
+        id = sen.get("id")
         if id == None:
             raise Exception("sensor id not found")
-        name = sensor.get("name")
+        name = sen.get("name")
         if name == None:
             raise Exception("sensor name not found")
-        desc = sensor.get("description")
+        desc = sen.get("description")
         if desc == None:
             raise Exception("sensor description not found")
-        model = sensor.get("model")
+        model = sen.get("model")
         if model == None:
             raise Exception("sensor model not found")
-        unit = sensor.get("phenomenon_uom")
+        unit = sen.get("phenomenon_uom")
         if unit == None:
             raise Exception("sensor phenomenon_uom not found")
-        unit_pretty = sensor.get("phenomenon_name")
+        unit_pretty = sen.get("phenomenon_name")
         if unit_pretty == None:
             raise Exception("sensor phenomenon_name not found")
-        depth = sensor.get("depth")
+        depth = sen.get("depth")
         if depth == None:
             depth = "-1" 
 
-        device.sensors.append(Sensor(int(id), name, desc, model, unit, unit_pretty, float(depth), []))
+        sensor = Sensor(int(id), name, desc, model, unit, unit_pretty, float(depth), [])
+
+        for obs in sen.findall("observations/observation"):
+            id = obs.get("id")
+            if id == None:
+                raise Exception("observation id not found")
+            time = obs.get("time")
+            if time == None:
+                raise Exception("observation time not found")
+            value = obs.get("value")
+            if value == None:
+                raise Exception("observation value not found")
+
+            sensor.observations.append(Observation(int(id), datetime.fromisoformat(time), float(value)))
+
+        device.sensors.append(sensor)
 
     return device
 
