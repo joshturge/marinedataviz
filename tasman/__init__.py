@@ -2,7 +2,7 @@ import pandas as pd
 from matplotlib.figure import Figure
 from tasman.unmarshal import unmarshal_device
 from tasman.model import Observation
-from tasman.db import get_db, insert_device, query_db
+from tasman.db import get_db, insert_device, query_db, get_device_by_id
 from io import BytesIO
 import base64
 from flask import Flask, render_template, request, g
@@ -70,6 +70,31 @@ def upload_file():
         plots.append(data)
 
     return render_template("device_stats.html", device=device, plots=plots), 200
+
+@app.route("/dashboard/<int:id>")
+def dashboard(id: int):
+    dbconn = get_db()
+    device = get_device_by_id(dbconn, id) 
+    plots = [] 
+    for sensor in device.sensors:
+        df = get_dataframe(sensor.observations)
+        fig = Figure()
+        ax = fig.subplots()
+        ax.plot(df.index, df.values)
+        if sensor.depth != 0:
+            ax.set_title(f"{sensor.name} at depth of {sensor.depth:.2f} metres")
+        else:
+            ax.set_title(f"{sensor.name}")
+        ax.tick_params(axis='x', labelrotation=30)
+        # Save it to a temporary buffer.
+        buf = BytesIO()
+        fig.savefig(buf, format="png")
+        # Embed the result in the html output.
+        data = base64.b64encode(buf.getbuffer()).decode("ascii")
+        plots.append(data)
+
+    return render_template("device_stats.html", device=device, plots=plots), 200
+
 
 @app.route("/geo-markers")
 def geo_markers():

@@ -31,8 +31,10 @@ body,
     justify-content: center;
     gap: 0.4rem;
     min-width: 450px;
+    max-width: 80%;
     padding: 1.3rem;
     min-height: auto;
+    max-height: 80%;
     position: absolute;
     background-color: white;
     border: 1px solid #ddd;
@@ -122,4 +124,18 @@ form {
     position: absolute;
     bottom: 5%;
     z-index: 2;
+}
+
+#dashboard {
+    overflow-x: hidden;
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    justify-items: center;
+}
+
+.plot {
+    max-width: 100%;
+    height: auto;
+    object-fit: scale-down;
 }
