@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
 from tasman.unmarshal import unmarshal_device
@@ -79,8 +80,12 @@ def dashboard(id: int):
     plots = [] 
     for sensor in device.sensors:
         df = get_dataframe(sensor.observations)
+        # remove anomalies from dataset
+        df = df.resample('D').mean().fillna(-1)
+        df = df[np.abs(df.values-df.values.mean()) <= (3*df.values.std())]
         fig = Figure()
         ax = fig.subplots()
+        ax.autoscale()
         ax.plot(df.index, df.values)
         if sensor.depth != 0:
             ax.set_title(f"{sensor.name} at depth of {sensor.depth:.2f} metres")

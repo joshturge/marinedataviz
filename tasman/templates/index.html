@@ -22,6 +22,7 @@
         hx-swap="innerHTML">Upload Dataset</button>
     <div id="map"></div>
     <script>
+        let currDevID = 0;
         const uploadModal = document.querySelector("#upload-modal");
         const dashboardModal = document.querySelector("#dashboard-modal");
         const overlay = document.querySelector(".overlay");
@@ -30,7 +31,8 @@
         const openDashboardModal = function (e) {
             dashboardModal.classList.remove("hidden");
             overlay.classList.remove("hidden");
-            htmx.ajax("GET", "/dashboard/" + e.target.deviceID, {target: "#dashboard-modal", swap: "innerHTML"})
+            currDevID = e.target.deviceID;
+            htmx.ajax("GET", "/dashboard/" + currDevID, {target: "#dashboard-modal", swap: "innerHTML"});
         };
         const openUploadModal = function () {
             uploadModal.classList.remove("hidden");
