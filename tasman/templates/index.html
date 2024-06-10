@@ -28,11 +28,9 @@
         const btnOpenUpload = document.querySelector("#open-upload");
 
         const openDashboardModal = function (e) {
-            console.log(e);
-            m = findMarkerByLocation(e.latlng.lat, e.latlng.lng)
             dashboardModal.classList.remove("hidden");
             overlay.classList.remove("hidden");
-            htmx.ajax("GET", "/dashboard/1", {target: "#dashboard-modal", swap: "innerHTML"})
+            htmx.ajax("GET", "/dashboard/" + e.target.deviceID, {target: "#dashboard-modal", swap: "innerHTML"})
         };
         const openUploadModal = function () {
             uploadModal.classList.remove("hidden");
@@ -70,36 +68,25 @@
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
         let mapMarkers = [];
-        let markers = [];
         async function updateMarkers() {
             try {
                 const response = await fetch("/geo-markers", {
                     method: "GET",
                 });
                 mapMarkers = [];
-                markers = [];
                 data = await response.json();
-                console.log(data);
                 data.markers.forEach((m) => {
-                    let newMark = L.marker([m.latitude, m.longtitude]).addTo(map);
-                    newMark.on('click', openDashboardModal)
-                    markers.push(m)
+                    let newMark = L.marker([m.latitude, m.longtitude]);
+                    newMark.deviceID = m.id;
+                    newMark.on('click', openDashboardModal);
+                    newMark.addTo(map);
                     mapMarkers.push(newMark);
-
                 });
             } catch (e) {
                 console.error(e);
             }
         }
         updateMarkers();
-
-        function findMarkerByLocation(lat, long) {
-            markers.forEach((m) => {
-                if (m.latitude == lat && m.longtitude == long) {
-                    return m
-                }
-            });
-        }
     </script>
 </body>
 
