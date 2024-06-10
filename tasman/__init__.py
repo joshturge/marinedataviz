@@ -56,6 +56,7 @@ def upload_file():
         df = get_dataframe(sensor.observations)
         fig = Figure()
         ax = fig.subplots()
+        ax.autoscale()
         ax.plot(df.index, df.values)
         if sensor.depth != 0:
             ax.set_title(f"{sensor.name} at depth of {sensor.depth:.2f} metres")
