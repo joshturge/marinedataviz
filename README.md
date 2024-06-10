@@ -4,7 +4,6 @@ A simple dashboard to display the [TasMAN dataset](https://data.csiro.au/collect
 
 ## TODO
 
-* Anomoly detection on sensor data 
 * Filter sensor data by range 
 * Make the unmarshal_device function more efficient
 
