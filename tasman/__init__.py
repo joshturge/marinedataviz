@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
 from tasman.unmarshal import unmarshal_device
-from tasman.model import Observation
+from tasman.model import Device, Observation
 from tasman.db import get_db, insert_device, query_db, get_device_by_id
 from io import BytesIO
 import base64
@@ -17,6 +17,30 @@ def get_dataframe(observs: list[Observation]):
     dataframe = pd.DataFrame({"time": time, "values": values})
     dataframe.set_index('time', inplace=True)
     return dataframe
+
+def get_plots(device: Device) -> list[str]:
+    """get_plots generates plots in png format encoded as ascii, which can then be embedded into the html img element"""
+    plots = [] 
+    for sensor in device.sensors:
+        df = get_dataframe(sensor.observations)
+        # remove anomalies from dataset
+        df = df.resample('D').mean().fillna(-1)
+        df = df[np.abs(df.values-df.values.mean()) <= (3*df.values.std())]
+        fig = Figure()
+        ax = fig.subplots()
+        ax.autoscale()
+        ax.plot(df.index, df.values)
+        if sensor.depth != 0:
+            ax.set_title(f"{sensor.name} at depth of {sensor.depth:.2f} metres")
+        else:
+            ax.set_title(f"{sensor.name}")
+        ax.tick_params(axis='x', labelrotation=30)
+        # Save it to a temporary buffer.
+        buf = BytesIO()
+        fig.savefig(buf, format="png")
+        data = base64.b64encode(buf.getbuffer()).decode("ascii")
+        plots.append(data)
+    return plots
 
 app = Flask(__name__)
 
@@ -48,56 +72,33 @@ def upload_file():
     if 'dataset' not in request.files:
         return "file not found", 400 
     file = request.files['dataset']
-    device = unmarshal_device(file.stream.read())
-    dbconn = get_db()
-    insert_device(dbconn, device)
+    try:
+        device = unmarshal_device(file.stream.read())
+    except Exception as e:
+        print(f"unmarshal_device error: {e}")
+        return "an error occured", 400
 
-    plots = [] 
-    for sensor in device.sensors:
-        df = get_dataframe(sensor.observations)
-        fig = Figure()
-        ax = fig.subplots()
-        ax.autoscale()
-        ax.plot(df.index, df.values)
-        if sensor.depth != 0:
-            ax.set_title(f"{sensor.name} at depth of {sensor.depth:.2f} metres")
-        else:
-            ax.set_title(f"{sensor.name}")
-        ax.tick_params(axis='x', labelrotation=30)
-        # Save it to a temporary buffer.
-        buf = BytesIO()
-        fig.savefig(buf, format="png")
-        # Embed the result in the html output.
-        data = base64.b64encode(buf.getbuffer()).decode("ascii")
-        plots.append(data)
+    try:
+        dbconn = get_db()
+        insert_device(dbconn, device)
+    except Exception as e:
+        print(f"insert_device error: {e}")
+        return "an error occured", 400
+
+    plots = get_plots(device)
 
     return render_template("device_stats.html", device=device, plots=plots), 200
 
 @app.route("/dashboard/<int:id>")
 def dashboard(id: int):
-    dbconn = get_db()
-    device = get_device_by_id(dbconn, id) 
-    plots = [] 
-    for sensor in device.sensors:
-        df = get_dataframe(sensor.observations)
-        # remove anomalies from dataset
-        df = df.resample('D').mean().fillna(-1)
-        df = df[np.abs(df.values-df.values.mean()) <= (3*df.values.std())]
-        fig = Figure()
-        ax = fig.subplots()
-        ax.autoscale()
-        ax.plot(df.index, df.values)
-        if sensor.depth != 0:
-            ax.set_title(f"{sensor.name} at depth of {sensor.depth:.2f} metres")
-        else:
-            ax.set_title(f"{sensor.name}")
-        ax.tick_params(axis='x', labelrotation=30)
-        # Save it to a temporary buffer.
-        buf = BytesIO()
-        fig.savefig(buf, format="png")
-        # Embed the result in the html output.
-        data = base64.b64encode(buf.getbuffer()).decode("ascii")
-        plots.append(data)
+    try:
+        dbconn = get_db()
+        device = get_device_by_id(dbconn, id) 
+    except Exception as e:
+        print(f"get_device_by_id error: {e}")
+        return "an error occured", 400
+
+    plots = get_plots(device)
 
     return render_template("device_stats.html", device=device, plots=plots), 200
 
